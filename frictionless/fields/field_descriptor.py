@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Union, Pattern
 import re
-
+import json
 from pydantic import Field as PydanticField, AliasChoices, model_validator, BaseModel
 from typing_extensions import Self
 
@@ -151,6 +151,25 @@ class ArrayFieldDescriptor(BaseFieldDescriptor):
         default=None, alias="arrayItem"
     )
 
+    def read_value(self, cell: Any) -> Optional[List[Any]]:
+        if not isinstance(cell, list):
+            if isinstance(cell, str):
+                try:
+                    cell = json.loads(cell)
+                except Exception:
+                    return None
+                if not isinstance(cell, list):
+                    return None
+            elif isinstance(cell, tuple):
+                cell = list(cell)  # type: ignore
+            else:
+                return None
+        return cell  # type: ignore
+
+    def write_value(self, cell: Optional[List[Any]]) -> Optional[str]:
+        if cell is None:
+            return None
+        return json.dumps(cell)
 
 class AnyFieldDescriptor(BaseFieldDescriptor):
     """The field contains values of a unspecified or mixed type."""
